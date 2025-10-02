@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <title>MERCURIALE – Comparateur & Commande</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Votre feuille de style personnalisée -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="antialiased">
@@ -28,7 +24,6 @@
                     </div>
                     <div class="hidden md:block">
                         <div class="flex space-x-2">
-                            <!-- MODIFIÉ: Compteur de sources mis à jour -->
                             <span class="bg-blue-500 text-xs px-3 py-1 rounded-full flex items-center"><i class="fas fa-database mr-1"></i><span>4 sources</span></span>
                             <span class="bg-blue-500 text-xs px-3 py-1 rounded-full flex items-center"><i class="fas fa-boxes mr-1"></i><span id="productCount">0 produits</span></span>
                         </div>
@@ -51,7 +46,6 @@
                             <label class="inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="source" value="washington" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Washington</span>
                             </label>
-                            <!-- NOUVEAUTÉ: Case à cocher pour Le Havre -->
                             <label class="inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="source" value="lehavre" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
                                 <span class="ml-2 text-gray-700 font-medium">Le Havre</span>
@@ -84,7 +78,7 @@
                     
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
-                        <input type="text" id="searchInput" placeholder="Rechercher un produit..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" id="searchInput" placeholder="Rechercher un produit, ou plusieurs codes produits séparés par une virgule..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
                 </div>
 
@@ -116,10 +110,49 @@
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-gray-500">
                     <div class="flex items-center justify-center md:justify-start mb-2 md:mb-0"><i class="fas fa-info-circle mr-2"></i><span>© 2025 MERCURIALE – MyData-Folk</span></div>
                     <div class="flex items-center justify-center md:justify-end space-x-4">
-                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-question-circle mr-1"></i>Aide</a>
-                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-cog mr-1"></i>Paramètres</a>
-                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-envelope mr-1"></i>Contact</a>
+                        <a href="CONVERTISSEUR/index.html" target="_blank" class="hover:text-indigo-600"><i class="fas fa-sync-alt mr-1"></i>Convertisseur JSON</a>
+                        <a href="#" id="settingsBtn" class="hover:text-indigo-600"><i class="fas fa-cog mr-1"></i>Paramètres</a>
+                        <a href="#" id="contactBtn" class="hover:text-indigo-600"><i class="fas fa-envelope mr-1"></i>Contact</a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOUVEAU: Modale Paramètres -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-2xl font-bold">Paramètres</p>
+                <div class="cursor-pointer z-50 modal-close">
+                    <i class="fas fa-times text-gray-500"></i>
+                </div>
+            </div>
+            <div class="text-sm">
+                <p class="mb-4">Gérez les préférences de votre application ici.</p>
+                <button id="resetAppBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                    <i class="fas fa-trash-alt mr-2"></i>Réinitialiser la commande et les préférences
+                </button>
+                 <p class="text-xs text-gray-500 mt-2">Attention : Cette action est irréversible. Elle videra votre commande en cours et réinitialisera l'affichage des colonnes par défaut.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOUVEAU: Modale Contact -->
+    <div id="contactModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-2xl font-bold">Contact</p>
+                <div class="cursor-pointer z-50 modal-close">
+                    <i class="fas fa-times text-gray-500"></i>
+                </div>
+            </div>
+            <div class="text-sm">
+                <p class="mb-4">Pour toute question ou assistance, veuillez nous contacter à l'adresse suivante :</p>
+                <div class="text-center p-3 bg-gray-100 rounded-md">
+                    <a href="mailto:mydata.folkestone@gmail.com" class="text-indigo-600 font-semibold hover:underline">
+                        <i class="fas fa-envelope mr-2"></i>mydata.folkestone@gmail.com
+                    </a>
                 </div>
             </div>
         </div>

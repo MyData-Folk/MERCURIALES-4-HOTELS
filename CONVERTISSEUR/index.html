@@ -2,105 +2,231 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Convertisseur de JSON</title>
+    <title>Convertisseur de Données (CSV/JSON)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: sans-serif; }
-        textarea { font-family: monospace; }
+        body { font-family: 'Inter', sans-serif; }
+        textarea { font-family: 'Fira Code', 'Courier New', monospace; font-size: 0.875rem; }
+        .tab-active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
+        .tab-inactive { border-color: transparent; color: #6b7280; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-100 p-4 sm:p-8">
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <h1 class="text-2xl font-bold mb-4 text-gray-800">Correcteur de JSON (Format "Clé;Clé:Valeur;Valeur")</h1>
-        <p class="text-gray-600 mb-6">Collez votre JSON mal formaté dans la première zone, cliquez sur "Convertir", et copiez le résultat depuis la seconde zone.</p>
+    <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-bold mb-2 text-gray-800">Convertisseur de Données</h1>
+        <p class="text-gray-500 mb-6">Un outil pour corriger des fichiers JSON mal formatés ou convertir des fichiers CSV en JSON.</p>
 
-        <div class="grid grid-cols-1 gap-6">
-            <div>
-                <label for="inputJson" class="block text-sm font-medium text-gray-700 mb-2">1. JSON Mal Formaté</label>
-                <textarea id="inputJson" rows="10" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Collez votre JSON ici..."></textarea>
+        <!-- Tabs -->
+        <div class="mb-4 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button id="tab-csv" class="tab-active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">Convertisseur CSV vers JSON</button>
+                <button id="tab-json" class="tab-inactive whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">Correcteur de JSON</button>
+            </nav>
+        </div>
+        
+        <div class="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
+            <strong>Mode d'emploi :</strong> Après conversion, cliquez sur "Enregistrer sous..." pour télécharger le fichier. Vous devrez ensuite le déplacer manuellement dans votre dossier <code>data/</code> pour mettre à jour la source.
+        </div>
+
+        <!-- CSV to JSON Converter -->
+        <div id="converter-csv">
+            <div class="mb-4">
+                <label for="csvDelimiter" class="block text-sm font-medium text-gray-700">Séparateur (Délimiteur)</label>
+                <input type="text" id="csvDelimiter" value=";" class="mt-1 block w-20 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
-
-            <div class="text-center">
-                <button id="convertBtn" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-200">
-                    Convertir
-                </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="inputCsv" class="block text-sm font-medium text-gray-700 mb-2">1. Collez votre texte CSV</label>
+                    <textarea id="inputCsv" rows="15" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Exemple:&#10;Code Produit;Libellé produit;Prix&#10;001;Tomates;2.50"></textarea>
+                </div>
+                <div>
+                    <label for="outputJsonCsv" class="block text-sm font-medium text-gray-700 mb-2">2. Résultat JSON</label>
+                    <textarea id="outputJsonCsv" rows="15" readonly class="w-full p-2 border border-gray-300 rounded-md bg-gray-50"></textarea>
+                </div>
             </div>
-
-            <div>
-                <label for="outputJson" class="block text-sm font-medium text-gray-700 mb-2">2. JSON Correctement Formaté</label>
-                <textarea id="outputJson" rows="15" readonly class="w-full p-2 border border-gray-300 rounded-md bg-gray-50"></textarea>
-                 <button id="copyBtn" class="mt-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
-                    Copier le résultat
-                </button>
-                <span id="copyMessage" class="ml-3 text-green-700 font-medium opacity-0 transition-opacity">Copié !</span>
+            <div class="mt-4 flex items-center space-x-4">
+                <button id="convertBtnCsv" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-200">Convertir</button>
+                <button id="copyBtnCsv" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">Copier le JSON</button>
+                <button id="saveBtnCsv" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">Enregistrer sous...</button>
+                <span id="copyMessageCsv" class="text-green-700 font-medium opacity-0 transition-opacity">Copié !</span>
             </div>
         </div>
+
+        <!-- JSON Corrector -->
+        <div id="converter-json" class="hidden">
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="inputJson" class="block text-sm font-medium text-gray-700 mb-2">1. Collez votre JSON mal formaté</label>
+                    <textarea id="inputJson" rows="15" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder='[{"clé1;clé2":"valeur1;valeur2"}]'></textarea>
+                </div>
+                <div>
+                    <label for="outputJson" class="block text-sm font-medium text-gray-700 mb-2">2. Résultat JSON Corrigé</label>
+                    <textarea id="outputJson" rows="15" readonly class="w-full p-2 border border-gray-300 rounded-md bg-gray-50"></textarea>
+                </div>
+            </div>
+             <div class="mt-4 flex items-center space-x-4">
+                <button id="convertBtnJson" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-200">Convertir</button>
+                <button id="copyBtnJson" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">Copier le JSON</button>
+                <button id="saveBtnJson" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">Enregistrer sous...</button>
+                <span id="copyMessageJson" class="text-green-700 font-medium opacity-0 transition-opacity">Copié !</span>
+            </div>
+        </div>
+        
         <div id="error" class="mt-4 p-4 bg-red-100 text-red-800 border-l-4 border-red-500 rounded-md hidden"></div>
     </div>
 
     <script>
-        const inputArea = document.getElementById('inputJson');
-        const outputArea = document.getElementById('outputJson');
-        const convertBtn = document.getElementById('convertBtn');
-        const copyBtn = document.getElementById('copyBtn');
+        // Tab switching logic
+        const tabs = {
+            csv: { btn: document.getElementById('tab-csv'), panel: document.getElementById('converter-csv') },
+            json: { btn: document.getElementById('tab-json'), panel: document.getElementById('converter-json') }
+        };
+
+        const setActiveTab = (activeTab) => {
+            Object.keys(tabs).forEach(key => {
+                const is_active = key === activeTab;
+                tabs[key].btn.classList.toggle('tab-active', is_active);
+                tabs[key].btn.classList.toggle('tab-inactive', !is_active);
+                tabs[key].panel.classList.toggle('hidden', !is_active);
+            });
+        };
+        
+        tabs.csv.btn.addEventListener('click', () => setActiveTab('csv'));
+        tabs.json.btn.addEventListener('click', () => setActiveTab('json'));
+        
         const errorDiv = document.getElementById('error');
-        const copyMessage = document.getElementById('copyMessage');
 
-        convertBtn.addEventListener('click', () => {
+        // --- CSV to JSON Logic ---
+        const convertBtnCsv = document.getElementById('convertBtnCsv');
+        const inputCsv = document.getElementById('inputCsv');
+        const outputJsonCsv = document.getElementById('outputJsonCsv');
+        
+        convertBtnCsv.addEventListener('click', () => {
             errorDiv.classList.add('hidden');
-            outputArea.value = '';
+            const delimiter = document.getElementById('csvDelimiter').value || ';';
+            const lines = inputCsv.value.trim().split(/\r?\n/);
+            
+            if (lines.length < 2) {
+                errorDiv.textContent = "Erreur : Le CSV doit contenir au moins une ligne d'en-tête et une ligne de données.";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
 
-            try {
-                // 1. Lire le texte et le parser en tant que JSON
-                const data = JSON.parse(inputArea.value);
-                if (!Array.isArray(data)) {
-                    throw new Error("Le JSON doit être un tableau (commencer par '[').");
+            const headers = lines[0].split(delimiter).map(h => h.trim());
+            const result = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(delimiter);
+                if (values.length > headers.length) {
+                     console.warn(`La ligne ${i + 1} a plus de colonnes que l'en-tête. Elle sera tronquée.`);
                 }
+                const obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = (values[j] || "").trim();
+                }
+                result.push(obj);
+            }
+            outputJsonCsv.value = JSON.stringify(result, null, 2);
+        });
 
-                // 2. Transformer chaque objet du tableau
+        // --- JSON Corrector Logic ---
+        const convertBtnJson = document.getElementById('convertBtnJson');
+        const inputJson = document.getElementById('inputJson');
+        const outputJson = document.getElementById('outputJson');
+
+        convertBtnJson.addEventListener('click', () => {
+            errorDiv.classList.add('hidden');
+            try {
+                const data = JSON.parse(inputJson.value);
+                if (!Array.isArray(data)) throw new Error("Le JSON doit être un tableau (commencer par '[').");
+
                 const transformedData = data.map(item => {
-                    // Extraire la seule clé et la seule valeur de l'objet
+                    if (Object.keys(item).length !== 1) return item;
                     const longKey = Object.keys(item)[0];
-                    const longValue = item[longKey];
+                    if (!longKey.includes(';')) return item;
 
-                    // Séparer les clés et les valeurs par le point-virgule
+                    const longValue = item[longKey];
                     const keys = longKey.split(';');
                     const values = longValue.split(';');
-
-                    if (keys.length !== values.length) {
-                        console.warn('Attention: le nombre de clés et de valeurs ne correspond pas pour la ligne :', longValue);
-                    }
-
-                    // Reconstruire un nouvel objet propre
+                    
                     const newItem = {};
                     keys.forEach((key, index) => {
-                        // Nettoyer la clé et la valeur (enlever les espaces superflus)
-                        const cleanKey = key.trim();
-                        const cleanValue = values[index] ? values[index].trim() : "";
-                        newItem[cleanKey] = cleanValue;
+                        newItem[key.trim()] = (values[index] || "").trim();
                     });
-                    
                     return newItem;
                 });
-
-                // 3. Afficher le résultat joliment formaté
-                outputArea.value = JSON.stringify(transformedData, null, 2);
-
+                outputJson.value = JSON.stringify(transformedData, null, 2);
             } catch (e) {
-                errorDiv.textContent = `Erreur : ${e.message}. Veuillez vérifier que votre JSON est valide et bien copié.`;
+                errorDiv.textContent = `Erreur : ${e.message}. Vérifiez que votre JSON est valide.`;
                 errorDiv.classList.remove('hidden');
             }
         });
+        
+        // --- Fonction de Téléchargement ---
+        const downloadFile = async (content, fileName) => {
+            const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
 
-        copyBtn.addEventListener('click', () => {
-            if (outputArea.value) {
-                navigator.clipboard.writeText(outputArea.value).then(() => {
-                    copyMessage.classList.remove('opacity-0');
-                    setTimeout(() => copyMessage.classList.add('opacity-0'), 2000);
-                });
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: fileName,
+                        types: [{ description: 'Fichier JSON', accept: { 'application/json': ['.json'] } }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    console.error("Erreur avec showSaveFilePicker:", err);
+                }
             }
-        });
+
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        };
+        
+        // --- Logique des Boutons "Copier" et "Enregistrer" ---
+        // ** VERSION CORRIGÉE SANS DUPLICATION **
+        const setupActionButtons = (actions) => {
+            actions.forEach(({ btnId, outputId, messageId, saveBtnId }) => {
+                document.getElementById(btnId).addEventListener('click', () => {
+                    const outputArea = document.getElementById(outputId);
+                    const message = document.getElementById(messageId);
+                    if (outputArea.value) {
+                        navigator.clipboard.writeText(outputArea.value).then(() => {
+                            message.classList.remove('opacity-0');
+                            setTimeout(() => message.classList.add('opacity-0'), 2000);
+                        });
+                    }
+                });
+                document.getElementById(saveBtnId).addEventListener('click', () => {
+                     const outputArea = document.getElementById(outputId);
+                     if (outputArea.value) {
+                         downloadFile(outputArea.value, 'donnees_converties.json');
+                     } else {
+                         alert("Il n'y a rien à enregistrer. Veuillez d'abord convertir des données.");
+                     }
+                });
+            });
+        };
+        
+        setupActionButtons([
+            { btnId: 'copyBtnCsv', outputId: 'outputJsonCsv', messageId: 'copyMessageCsv', saveBtnId: 'saveBtnCsv' },
+            { btnId: 'copyBtnJson', outputId: 'outputJson', messageId: 'copyMessageJson', saveBtnId: 'saveBtnJson' }
+        ]);
+
     </script>
 </body>
 </html>
