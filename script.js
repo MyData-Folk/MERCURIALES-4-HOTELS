@@ -92,6 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     searchResultsContainer.addEventListener('click', (e) => {
         const addBtn = e.target.closest('.btn-add');
         if (addBtn) addProductToOrder(addBtn.dataset.code, addBtn.dataset.source);
+        
+        const removeBtn = e.target.closest('.btn-remove-from-search');
+        if (removeBtn) removeProductFromOrder(removeBtn.dataset.code, removeBtn.dataset.source);
     });
     
     orderListContainer.addEventListener('click', (e) => {
@@ -148,12 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // CORRIGÉ: Logique de recherche multi-codes
-        if (field === 'Code Produit' && query.includes(',')) {
-            const codes = query.split(',').map(code => code.trim().toLowerCase()).filter(code => code);
+        // NOUVELLE LOGIQUE: Recherche multi-codes avec ESPACE comme séparateur
+        if (field === 'Code Produit' && isMultiCodeSearch(query)) {
+            const codes = extractProductCodes(query);
             lastSearchResults = currentData.filter(item => {
-                const itemCode = String(item['Code Produit'] ?? '').trim().toLowerCase();
-                return codes.includes(itemCode);
+                const itemCode = String(item['Code Produit'] ?? '').trim();
+                return codes.some(code => code === itemCode);
             });
         } else {
             const lowerCaseQuery = query.toLowerCase();
@@ -164,9 +167,132 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         displaySearchResults(lastSearchResults, query);
     }
+
+    // --- FONCTIONS POUR LA RECHERCHE MULTI-CODES ---
+    
+    function isMultiCodeSearch(query) {
+        // Vérifie si la requête contient des codes numériques séparés par des espaces
+        const codes = query.split(/\s+/).filter(code => code.trim().length > 0);
+        return codes.length > 1 && codes.every(code => /^\d{2,6}$/.test(code));
+    }
+
+    function extractProductCodes(query) {
+        return query.split(/\s+/)
+            .map(code => code.trim())
+            .filter(code => code.length >= 2 && code.length <= 6 && /^\d+$/.test(code));
+    }
+
+    function highlightMultiCodes(text, codes) {
+        if (!text || !codes || codes.length === 0) return text;
+        
+        let highlighted = String(text);
+        codes.forEach(code => {
+            const regex = new RegExp(`\\b${code}\\b`, 'gi');
+            highlighted = highlighted.replace(regex, '<span class="search-highlight">$&</span>');
+        });
+        return highlighted;
+    }
+    
+    function displaySearchResults(results, query) {
+        if (results.length === 0) {
+            if (query.length > 0) {
+                let message = `Aucun résultat pour "<strong>${query}</strong>"`;
+                
+                // Message spécifique pour la recherche multi-codes
+                if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
+                    const codes = extractProductCodes(query);
+                    message = `Aucun résultat pour les codes : <strong>${codes.join(', ')}</strong>`;
+                }
+                
+                searchResultsContainer.innerHTML = `<div class="text-center py-8 px-4"><p class="text-gray-500">${message}</p></div>`;
+            } else {
+                updatePlaceholder();
+            }
+            return;
+        }
+        
+        // Afficher un indicateur pour la recherche multi-codes
+        let infoHTML = '';
+        if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
+            const codes = extractProductCodes(query);
+            const foundCount = results.length;
+            const totalCodes = codes.length;
+            
+            infoHTML = `
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center mb-2 sm:mb-0">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    Recherche multi-codes : ${foundCount}/${totalCodes} codes trouvés
+                                </p>
+                            </div>
+                        </div>
+                        <button id="addAllResultsBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center hover:scale-105 transition-transform">
+                            <i class="fas fa-cart-plus mr-2"></i>Ajouter tout à la commande
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        searchResultsContainer.innerHTML = infoHTML + createTableHTML(results, 'search', query);
+        
+        // Ajouter l'événement pour le bouton "Ajouter tout"
+        const addAllBtn = document.getElementById('addAllResultsBtn');
+        if (addAllBtn) {
+            addAllBtn.addEventListener('click', () => {
+                addAllSearchResultsToOrder(results);
+            });
+        }
+    }
+
+    // --- NOUVELLE FONCTION POUR AJOUTER TOUS LES RÉSULTATS ---
+    function addAllSearchResultsToOrder(results) {
+        if (!results || results.length === 0) {
+            showNotification('Aucun article à ajouter', 'warning');
+            return;
+        }
+        
+        let addedCount = 0;
+        let skippedCount = 0;
+        
+        results.forEach(product => {
+            const isAlreadyInOrder = orderList.some(p => 
+                p["Code Produit"] == product["Code Produit"] && p._source === product._source
+            );
+            
+            if (!isAlreadyInOrder) {
+                orderList.push({
+                    ...product,
+                    _quantity: 1
+                });
+                addedCount++;
+            } else {
+                skippedCount++;
+            }
+        });
+        
+        saveOrderToLocalStorage();
+        renderOrderList();
+        
+        // Notification détaillée
+        let message = `${addedCount} article(s) ajouté(s) à la commande`;
+        if (skippedCount > 0) {
+            message += `, ${skippedCount} article(s) déjà présent(s)`;
+        }
+        
+        showNotification(message, addedCount > 0 ? 'success' : 'info');
+    }
     
     function createTableHTML(data, type, query = '') {
         const isOrder = type === 'order';
+        const isMultiCode = type === 'search' && searchField.value === 'Code Produit' && isMultiCodeSearch(query);
+        const codesToHighlight = isMultiCode ? extractProductCodes(query) : [];
+        
         return `
             <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -181,19 +307,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.map(item => `
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getSourceColor(item._source)}">${item._source}</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getSourceColor(item._source)}">
+                                        ${item._source}
+                                    </span>
+                                </td>
                                 ${visibleColumns.map(header => {
-                                    let cellContent = highlightText(item[header], query);
+                                    let cellContent = item[header] ?? '';
+                                    
+                                    // Appliquer le surlignage approprié
+                                    if (isMultiCode) {
+                                        cellContent = highlightMultiCodes(cellContent, codesToHighlight);
+                                    } else if (query && header === searchField.value) {
+                                        cellContent = highlightText(cellContent, query);
+                                    }
+                                    
+                                    // Formatage spécial pour les prix
                                     if (header === 'Prix') {
                                         cellContent = formatPriceFromFloat(parsePriceAsFloat(item[header]));
                                     }
+                                    
                                     return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cellContent}</td>`;
                                 }).join('')}
                                 ${isOrder ? `
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <input type="number" min="0" value="${item._quantity || 1}" class="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm quantity-input"
                                                data-code="${item['Code Produit']}" data-source="${item._source}">
-                                    </td>` : ''}
+                                    </td>
+                                ` : ''}
                                 <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
                                     ${getActionButtonHTML(item, type)}
                                 </td>
@@ -203,15 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tbody>
                 </table>
             </div>`;
-    }
-
-    function displaySearchResults(results, query) {
-        if (results.length === 0) {
-            if (query.length > 0) searchResultsContainer.innerHTML = `<div class="text-center py-8 px-4"><p class="text-gray-500">Aucun résultat pour "<strong>${query}</strong>"</p></div>`;
-            else updatePlaceholder();
-            return;
-        }
-        searchResultsContainer.innerHTML = createTableHTML(results, 'search', query);
     }
 
     function renderOrderList() {
@@ -303,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // CORRIGÉ: Calcul en centimes pour la précision
+        // Calcul en centimes pour la précision
         const totalInCents = orderList.reduce((sum, p) => {
             const priceInCents = parsePriceAsCents(p.Prix);
             const quantity = p._quantity || 1;
@@ -323,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
     }
     
-    // --- NOUVELLES FONCTIONS DE GESTION DES PRIX ---
+    // --- FONCTIONS DE GESTION DES PRIX ---
     function parsePriceAsFloat(priceStr) {
         if (typeof priceStr !== 'string') priceStr = String(priceStr);
         return parseFloat(priceStr.replace(',', '.')) || 0;
@@ -402,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-        // AMÉLIORÉ: Mise en forme des colonnes
+        // Mise en forme des colonnes
         const priceColIndex = visibleColumns.indexOf('Prix') + 1; // +1 pour la colonne "Source"
         const totalColIndex = headers.length - 1;
         const currencyFormat = '#,##0.00" €"';
@@ -424,9 +556,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FONCTIONS AUXILIAIRES ---
     function getActionButtonHTML(item, type) {
         const dataAttrs = `data-code="${item["Code Produit"]}" data-source="${item._source}"`;
+        const isInOrder = orderList.some(p => p["Code Produit"] == item["Code Produit"] && p._source === item._source);
+        
         if (type === 'search') {
-            const isInOrder = orderList.some(p => p["Code Produit"] == item["Code Produit"] && p._source === item._source);
-            return `<button class="btn-primary text-white px-3 py-1 rounded-md text-xs flex items-center btn-add" ${dataAttrs} ${isInOrder ? 'disabled' : ''}><i class="fas fa-plus mr-1"></i>Ajouter</button>`;
+            if (isInOrder) {
+                return `
+                    <div class="flex flex-col items-center space-y-1">
+                        <button class="bg-green-500 text-white px-3 py-1 rounded-md text-xs flex items-center cursor-not-allowed" disabled>
+                            <i class="fas fa-check mr-1"></i>Déjà ajouté
+                        </button>
+                        <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center btn-remove-from-search" ${dataAttrs}>
+                            <i class="fas fa-minus mr-1"></i>Retirer
+                        </button>
+                    </div>`;
+            } else {
+                return `<button class="btn-primary text-white px-3 py-1 rounded-md text-xs flex items-center btn-add" ${dataAttrs}><i class="fas fa-plus mr-1"></i>Ajouter</button>`;
+            }
         }
         return `<button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs flex items-center btn-remove" ${dataAttrs}><i class="fas fa-trash-alt mr-1"></i>Supprimer</button>`;
     }
@@ -447,8 +592,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function highlightText(text, query) {
         const content = text ?? '';
-        if (!query || !content || query.includes(',')) return content;
-        return String(content).replace(new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'), '<span class="search-highlight">$1</span>');
+        if (!query || !content) return content;
+        
+        // Ne pas surligner si c'est une recherche multi-codes
+        if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
+            return content;
+        }
+        
+        return String(content).replace(
+            new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'), 
+            '<span class="search-highlight">$1</span>'
+        );
     }
     
     function updatePlaceholder() {

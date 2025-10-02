@@ -50,3 +50,24 @@ body {
     border-radius: 2px;
     font-weight: 600;
 }
+/* Animation pour le bouton Ajouter tout */
+@keyframes pulse-gentle {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.btn-primary:hover {
+    animation: pulse-gentle 2s infinite;
+}
+
+/* Style pour les boutons désactivés */
+.btn-disabled {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    cursor: not-allowed;
+}
+
+/* Style pour le statut "Déjà ajouté" */
+.status-added {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
