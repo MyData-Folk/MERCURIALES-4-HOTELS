@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>MERCURIALE – Comparateur & Commande</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Votre feuille de style personnalisée -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex flex-col items-center justify-center py-8 px-4">
+        <div class="w-full max-w-7xl bg-white rounded-xl shadow-xl">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold flex items-center">
+                            <i class="fas fa-store-alt mr-3"></i>
+                            <span class="gradient-text-header">MERCURIALE</span>
+                        </h1>
+                        <p class="text-blue-100 mt-1">Comparez vos mercuriales, préparez et exportez votre commande fournisseur</p>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="flex space-x-2">
+                            <!-- MODIFIÉ: Compteur de sources mis à jour -->
+                            <span class="bg-blue-500 text-xs px-3 py-1 rounded-full flex items-center"><i class="fas fa-database mr-1"></i><span>4 sources</span></span>
+                            <span class="bg-blue-500 text-xs px-3 py-1 rounded-full flex items-center"><i class="fas fa-boxes mr-1"></i><span id="productCount">0 produits</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="p-6">
+                <!-- Search & Filter Section -->
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="source" value="folkestone" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Folkestone</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="source" value="vendome" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Vendôme</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="source" value="washington" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Washington</span>
+                            </label>
+                            <!-- NOUVEAUTÉ: Case à cocher pour Le Havre -->
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="source" value="lehavre" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                <span class="ml-2 text-gray-700 font-medium">Le Havre</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="relative">
+                                <button id="columnSelectorBtn" class="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    <i class="fas fa-columns mr-2"></i>
+                                    Afficher les colonnes
+                                    <i class="fas fa-chevron-down ml-2 -mr-1 h-5 w-5"></i>
+                                </button>
+                                <div id="columnSelectorDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                                    <div class="p-2" id="columnCheckboxes">
+                                        <p class="text-sm text-gray-500 text-center py-2">Chargement...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative w-full sm:w-auto">
+                                <select id="searchField" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-3 pr-10 text-base bg-gray-50">
+                                    <option value="all" selected>Tous les champs</option>
+                                    <option value="Libellé produit">Libellé produit</option>
+                                    <option value="Marque">Marque</option>
+                                    <option value="Code Produit">Code Produit</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
+                        <input type="text" id="searchInput" placeholder="Rechercher un produit..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Search Results -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center"><i class="fas fa-search mr-2 text-indigo-500"></i>Résultats de recherche</h2>
+                    <div id="searchResults" class="border border-gray-200 rounded-lg">
+                        <p class="text-center text-gray-500 py-8 px-4">Commencez à taper pour rechercher...</p>
+                    </div>
+                </div>
+
+                <!-- Order Section -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-lg font-semibold text-gray-800 flex items-center"><i class="fas fa-shopping-cart mr-2 text-indigo-500"></i>Ma commande<span id="orderCount" class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span></h2>
+                        <div class="flex space-x-2">
+                            <button id="downloadCsvBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-csv mr-2"></i>CSV</button>
+                            <button id="downloadXlsxBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-excel mr-2"></i>Excel</button>
+                        </div>
+                    </div>
+                    <div id="orderList" class="border border-gray-200 rounded-lg">
+                        <p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-xl">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-gray-500">
+                    <div class="flex items-center justify-center md:justify-start mb-2 md:mb-0"><i class="fas fa-info-circle mr-2"></i><span>© 2025 MERCURIALE – MyData-Folk</span></div>
+                    <div class="flex items-center justify-center md:justify-end space-x-4">
+                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-question-circle mr-1"></i>Aide</a>
+                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-cog mr-1"></i>Paramètres</a>
+                        <a href="#" class="hover:text-indigo-600"><i class="fas fa-envelope mr-1"></i>Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

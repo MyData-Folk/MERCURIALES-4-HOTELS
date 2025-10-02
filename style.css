@@ -1,0 +1,52 @@
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e6f0ff 100%);
+    min-height: 100vh;
+}
+
+.gradient-text-header {
+    color: white;
+}
+
+/* Styles des boutons */
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #2563eb);
+    transition: all 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Style de la barre de défilement personnalisée */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a5b4fc;
+}
+
+/* Surlignage pour le terme recherché */
+.search-highlight {
+    background-color: #e0e7ff;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}

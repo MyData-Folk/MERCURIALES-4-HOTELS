@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Convertisseur de JSON</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: sans-serif; }
+        textarea { font-family: monospace; }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">Correcteur de JSON (Format "Clé;Clé:Valeur;Valeur")</h1>
+        <p class="text-gray-600 mb-6">Collez votre JSON mal formaté dans la première zone, cliquez sur "Convertir", et copiez le résultat depuis la seconde zone.</p>
+
+        <div class="grid grid-cols-1 gap-6">
+            <div>
+                <label for="inputJson" class="block text-sm font-medium text-gray-700 mb-2">1. JSON Mal Formaté</label>
+                <textarea id="inputJson" rows="10" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Collez votre JSON ici..."></textarea>
+            </div>
+
+            <div class="text-center">
+                <button id="convertBtn" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-200">
+                    Convertir
+                </button>
+            </div>
+
+            <div>
+                <label for="outputJson" class="block text-sm font-medium text-gray-700 mb-2">2. JSON Correctement Formaté</label>
+                <textarea id="outputJson" rows="15" readonly class="w-full p-2 border border-gray-300 rounded-md bg-gray-50"></textarea>
+                 <button id="copyBtn" class="mt-2 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Copier le résultat
+                </button>
+                <span id="copyMessage" class="ml-3 text-green-700 font-medium opacity-0 transition-opacity">Copié !</span>
+            </div>
+        </div>
+        <div id="error" class="mt-4 p-4 bg-red-100 text-red-800 border-l-4 border-red-500 rounded-md hidden"></div>
+    </div>
+
+    <script>
+        const inputArea = document.getElementById('inputJson');
+        const outputArea = document.getElementById('outputJson');
+        const convertBtn = document.getElementById('convertBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const errorDiv = document.getElementById('error');
+        const copyMessage = document.getElementById('copyMessage');
+
+        convertBtn.addEventListener('click', () => {
+            errorDiv.classList.add('hidden');
+            outputArea.value = '';
+
+            try {
+                // 1. Lire le texte et le parser en tant que JSON
+                const data = JSON.parse(inputArea.value);
+                if (!Array.isArray(data)) {
+                    throw new Error("Le JSON doit être un tableau (commencer par '[').");
+                }
+
+                // 2. Transformer chaque objet du tableau
+                const transformedData = data.map(item => {
+                    // Extraire la seule clé et la seule valeur de l'objet
+                    const longKey = Object.keys(item)[0];
+                    const longValue = item[longKey];
+
+                    // Séparer les clés et les valeurs par le point-virgule
+                    const keys = longKey.split(';');
+                    const values = longValue.split(';');
+
+                    if (keys.length !== values.length) {
+                        console.warn('Attention: le nombre de clés et de valeurs ne correspond pas pour la ligne :', longValue);
+                    }
+
+                    // Reconstruire un nouvel objet propre
+                    const newItem = {};
+                    keys.forEach((key, index) => {
+                        // Nettoyer la clé et la valeur (enlever les espaces superflus)
+                        const cleanKey = key.trim();
+                        const cleanValue = values[index] ? values[index].trim() : "";
+                        newItem[cleanKey] = cleanValue;
+                    });
+                    
+                    return newItem;
+                });
+
+                // 3. Afficher le résultat joliment formaté
+                outputArea.value = JSON.stringify(transformedData, null, 2);
+
+            } catch (e) {
+                errorDiv.textContent = `Erreur : ${e.message}. Veuillez vérifier que votre JSON est valide et bien copié.`;
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (outputArea.value) {
+                navigator.clipboard.writeText(outputArea.value).then(() => {
+                    copyMessage.classList.remove('opacity-0');
+                    setTimeout(() => copyMessage.classList.add('opacity-0'), 2000);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
